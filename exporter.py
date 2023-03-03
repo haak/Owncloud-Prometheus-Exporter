@@ -44,6 +44,8 @@ def load_config():
     OWNCLOUD_SLEEP_TIME = os.environ.get('OWNCLOUD_SLEEP_TIME')
     global OWNCLOUD_URL
     OWNCLOUD_URL = os.environ.get('OWNCLOUD_URL')
+    global OWNCLOUD_EXPORTER_PORT
+    OWNCLOUD_EXPORTER_PORT = os.environ.get('OWNCLOUD_EXPORTER_PORT')
 
 
 def get_active_users_from_owncloud():
@@ -135,7 +137,7 @@ def parse_csv_from_owncloud(lines):
 
 
 def start_prometheus_server():
-    start_http_server(8000)
+    start_http_server(OWNCLOUD_EXPORTER_PORT)
 
 
 if __name__ == '__main__':
