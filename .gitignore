@@ -1,6 +1,6 @@
 .venv/
 data/
 .env
-AppMetrics.py
-exporter1.py
-exporter2.py
+build
+data
+dist
