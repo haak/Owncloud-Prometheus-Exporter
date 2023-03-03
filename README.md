@@ -8,6 +8,8 @@ This exporter scrapes the /metrics endpoint of owncloud added by an extension th
 ## Required environment variables
 OWNCLOUD_SLEEP_TIME
 OWNCLOUD_METRICS_API_KEY
+OWNCLOUD_EXPORTER_PORT
+OWNCLOUD_URL
 
 ## Installation
 python -m venv .venv

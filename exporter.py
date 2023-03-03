@@ -11,6 +11,7 @@ import os
 OWNCLOUD_SLEEP_TIME = 600
 OWNCLOUD_METRICS_API_KEY = ''
 OWNCLOUD_URL = ''
+OWNCLOUD_EXPORTER_PORT = 9000
 
 # Global ones
 OWNCLOUD_TOTAL_USERS = Gauge('owncloud_total_users', 'Description of gauge')
