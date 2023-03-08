@@ -67,20 +67,14 @@ class OwncloudMetrics:
             'Content-Type': 'application/csv',
         }
 
-        makeRequest = False
-        if makeRequest == True:
-            response = requests.get(self.owncloud_url + '/index.php/apps/metrics/download-api/users',
-                                    headers=headers)
-            print("got response")
+        response = requests.get(self.owncloud_url + '/index.php/apps/metrics/download-api/users',
+                                headers=headers)
 
-            if response.status_code != 200:
-                self.health.state("unhealthy")
-                print("error fetching metrics")
+        if response.status_code != 200:
+            self.health.state("unhealthy")
+            print("error fetching metrics")
 
-            lines = response.text.splitlines()
-        else:
-            with open('downloads/test7.csv', newline='') as csvfile:
-                lines = csvfile.readlines()
+        lines = response.text.splitlines()
 
         for line in lines:
             # skip first line
@@ -145,7 +139,6 @@ def main():
     """Main entry point"""
 
     polling_interval_seconds = int(os.getenv("OWNCLOUD_SLEEP_TIME", "500"))
-    # app_port = int(os.getenv("APP_PORT", "8011"))
     exporter_port = int(os.getenv("OWNCLOUD_EXPORTER_PORT", "9000"))
 
     print(f"Polling interval: {polling_interval_seconds} seconds")
