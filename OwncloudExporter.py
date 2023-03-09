@@ -67,8 +67,13 @@ class OwncloudMetrics:
             'Content-Type': 'application/csv',
         }
 
-        response = requests.get(self.owncloud_url + '/index.php/apps/metrics/download-api/users',
-                                headers=headers)
+        try:
+            response = requests.get(self.owncloud_url + '/index.php/apps/metrics/download-api/users',
+                                    headers=headers)
+
+        except:
+            print("error fetching metrics")
+            return
 
         if response.status_code != 200:
             self.health.state("unhealthy")
@@ -109,8 +114,13 @@ class OwncloudMetrics:
             'format': 'json',
         }
 
-        response = requests.get(self.owncloud_url + '/ocs/v1.php/apps/metrics/api/v1/metrics',
-                                params=params, headers=headers)
+        try:
+            response = requests.get(self.owncloud_url + '/ocs/v1.php/apps/metrics/api/v1/metrics',
+                                    params=params, headers=headers)
+
+        except:
+            print("error fetching metrics")
+            return
 
         if response.status_code != 200:
             self.health.state("unhealthy")
