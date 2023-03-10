@@ -12,16 +12,48 @@ OWNCLOUD_EXPORTER_PORT
 OWNCLOUD_URL
 
 ## Installation
-python -m venv .venv
-source .venv/bin/activate
+export LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib
+python3.7 -m venv venv
+source ./venv/bin/activate
 pip install -r requirements.txt
-python exporter.py
+python3.7 exporter.py
+
+
+* If you run on CentOS 7 and don't have Python 3.7, you will need to compile it from source:
+```
+wget https://www.python.org/ftp/python/3.7.0/Python-3.7.0.tgz
+tar xzf Python-3.7.0.tgz
+./configure --enable-optimizations --with-threads --enable-shared
+make
+make install altinstall
+```
+
 
 ## Usage
 python exporter.py
 
+## Package the software as a binary
+pyinstaller exporter.py --onefile 
 
+The generated binary is under ./dist/ directory.
 
+## Systemd unit
+
+```
+[Unit]
+Description=Prometheus Owncloud Exporter
+
+[Service]
+Environment=OWNCLOUD_URL=https://myserver.domain.org
+Environment=OWNCLOUD_SLEEP_TIME=43200
+Environment=OWNCLOUD_METRICS_API_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+ExecStart=/usr/local/bin/owncloud-exporter
+Restart=always
+RestartSec=15
+
+[Install]
+WantedBy=multi-user.target
+```
 
 ## Roadmap
 Currently it takes minutes for the metrics endpoint to respond, we are waiting to see if this can be made faster.
