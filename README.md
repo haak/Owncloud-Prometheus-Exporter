@@ -31,18 +31,10 @@ make
 make install altinstall
 ```
 
-=======
-
-python -m venv .venv
-
-source .venv/bin/activate
-
-pip install -r requirements.txt
-
 ## Compile a binary
 
 ## Package the software as a binary
-pyinstaller exporter.py --onefile 
+`pyinstaller --onefile OwncloudExporter.py`
 
 The generated binary is under ./dist/ directory.
 
@@ -63,10 +55,6 @@ RestartSec=15
 [Install]
 WantedBy=multi-user.target
 ```
-=======
-pip install pyinstaller
-
-pyinstaller --onefile OwncloudExporter.py
 
 ## Usage
 
