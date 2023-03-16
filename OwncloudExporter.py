@@ -17,12 +17,7 @@ class OwncloudMetrics:
         self.owncloud_url = os.getenv("OWNCLOUD_URL", None)
         self.metrics_api_key = os.getenv("OWNCLOUD_METRICS_API_KEY", None)
 
-        # Prometheus metrics to collect
-        self.current_requests = Gauge(
-            "app_requests_current", "Current requests")
-        self.pending_requests = Gauge(
-            "app_requests_pending", "Pending requests")
-        self.total_uptime = Gauge("app_uptime", "Uptime")
+
         self.health = Enum("app_health", "Health", states=[
                            "healthy", "unhealthy"])
         self.total_users = Gauge("owncloud_total_users", "Total users")
