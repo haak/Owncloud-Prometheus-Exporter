@@ -13,10 +13,10 @@ class OwncloudMetrics:
     """
 
     def __init__(self, polling_interval_seconds=500):
+        self.metrics_health = False
         self.polling_interval_seconds = polling_interval_seconds
         self.owncloud_url = os.getenv("OWNCLOUD_URL", None)
         self.metrics_api_key = os.getenv("OWNCLOUD_METRICS_API_KEY", None)
-
 
         self.health = Enum("app_health", "Health", states=[
                            "healthy", "unhealthy"])
@@ -65,37 +65,35 @@ class OwncloudMetrics:
         try:
             response = requests.get(self.owncloud_url + '/index.php/apps/metrics/download-api/users',
                                     headers=headers)
+            if response.status_code != 200:
+                self.health.state("unhealthy")
+                self.metrics_health = False
+                print("error fetching metrics")
 
+            lines = response.text.splitlines()
+            for line in lines:
+                # skip first line
+                if line.startswith("userId"):
+                    continue
+                else:
+                    user = line.split(",")[0]
+                    name = line.split(",")[1]
+                    quotaUsed = line.split(",")[3]
+                    quotaFree = line.split(",")[4]
+                    quotaTotal = line.split(",")[5]
+                    files = line.split(",")[6]
+                    self.quota_free_bytes.labels(user).set(quotaFree)
+                    self.quota_total_bytes.labels(user).set(quotaTotal)
+                    self.quota_used_bytes.labels(user).set(quotaUsed)
+                    self.user_files_total.labels(user).set(files)
+            print("done fetching user metrics")
         except:
-            print("error fetching metrics")
-            return
-
-        if response.status_code != 200:
+            print("error could not parse csv")
             self.health.state("unhealthy")
-            print("error fetching metrics")
-
-        lines = response.text.splitlines()
-
-        for line in lines:
-            # skip first line
-            if line.startswith("userId"):
-                continue
-            try:
-                user = line.split(",")[0]
-                name = line.split(",")[1]
-                quotaUsed = line.split(",")[3]
-                quotaFree = line.split(",")[4]
-                quotaTotal = line.split(",")[5]
-                files = line.split(",")[6]
-                self.quota_free_bytes.labels(user).set(quotaFree)
-                self.quota_total_bytes.labels(user).set(quotaTotal)
-                self.quota_used_bytes.labels(user).set(quotaUsed)
-                self.user_files_total.labels(user).set(files)
-
-            except:
-                print("error could not parse csv")
-                continue
-        print("done fetching user metrics")
+            self.metrics_health = False
+            return False
+        self.health.state("healthy")
+        self.metrics_health = True
 
     def fetch_system_metrics(self):
         print("Fetching system metrics")
@@ -113,36 +111,39 @@ class OwncloudMetrics:
             response = requests.get(self.owncloud_url + '/ocs/v1.php/apps/metrics/api/v1/metrics',
                                     params=params, headers=headers)
 
+            if response.status_code != 200:
+                self.health.state("unhealthy")
+                self.metrics_health = False
+                print("error fetching metrics")
+                return
+
+            self.total_users.set(
+                response.json()['ocs']['data']['users']['totalCount'])
+            self.active_users.set(
+                response.json()['ocs']['data']['users']['activeUsersCount'])
+            self.concurrent_users.set(
+                response.json()['ocs']['data']['users']['concurrentUsersCount'])
+            self.storage_free.set(
+                response.json()['ocs']['data']['files']['storage']['free'])
+            self.storage_total.set(
+                response.json()['ocs']['data']['files']['storage']['total'])
+            self.storage_used.set(
+                response.json()['ocs']['data']['files']['storage']['used'])
+            self.total_files.set(
+                response.json()['ocs']['data']['files']['totalFilesCount'])
         except:
-            print("error fetching metrics")
-            return
-
-        if response.status_code != 200:
+            print("error could not parse json")
             self.health.state("unhealthy")
-            print("error fetching metrics")
+            self.metrics_health = False
             return
-
-        self.total_users.set(
-            response.json()['ocs']['data']['users']['totalCount'])
-        self.active_users.set(
-            response.json()['ocs']['data']['users']['activeUsersCount'])
-        self.concurrent_users.set(
-            response.json()['ocs']['data']['users']['concurrentUsersCount'])
-        self.storage_free.set(
-            response.json()['ocs']['data']['files']['storage']['free'])
-        self.storage_total.set(
-            response.json()['ocs']['data']['files']['storage']['total'])
-        self.storage_used.set(
-            response.json()['ocs']['data']['files']['storage']['used'])
-        self.total_files.set(
-            response.json()['ocs']['data']['files']['totalFilesCount'])
 
         print("fetched system metrics")
+        self.health.state("healthy")
+        self.metrics_health = True
 
 
 def main():
     """Main entry point"""
-
     polling_interval_seconds = int(os.getenv("OWNCLOUD_SLEEP_TIME", "500"))
     exporter_port = int(os.getenv("OWNCLOUD_EXPORTER_PORT", "9000"))
 
@@ -151,9 +152,13 @@ def main():
         polling_interval_seconds=polling_interval_seconds
     )
     owncloud_metrics.fetch()
-    start_http_server(exporter_port)
-    print(f"Started metrics server on port {exporter_port}")
-    owncloud_metrics.run_metrics_loop()
+    print("Initial metrics fetched")
+    if owncloud_metrics.metrics_health:
+        start_http_server(exporter_port)
+        print(f"Started metrics server on port {exporter_port}")
+        owncloud_metrics.run_metrics_loop()
+    else:
+        print("Metrics server not started due to health check failure")
 
 
 if __name__ == "__main__":
